@@ -16,17 +16,6 @@ class Config:
 
 # %%
 
-import os
-import sunau
-_fname = '../genres/genres/blues/blues.00000.au'
-data = sunau.open(_fname, 'r')
-
-x = data.readframes(22050)
-
-y = int.from_bytes(x, byteorder='big')
-
-# %%
-
 """ Importing library """
 
 # OS, IO
@@ -63,46 +52,6 @@ from keras.utils import Sequence
 from keras.optimizers import Adam, SGD, RMSprop
 
 # %%
-""" Test """
-
-audio, sr = librosa.core.load(fname) # float32
-# sr1, audio1 = wavfile.read(fname) # int16
-
-# %%
-
-audio1[:10]
-
-# %%
-
-# from pydub import AudioSegment
-
-# x = AudioSegment.from_file(fname)
-# x.export('out.wav', format='wav')
-
-
-# %%
-# import numpy as np
-# import IPython.display as ipd
-
-# ipd.Audio(np.array([i for i in range(100000)]), rate=sr1)
-
-# %%
-
-# ipd.Audio(audio, rate=sr)
-
-# %%
-plt.figure(figsize=(14, 5))
-waveplot(audio, sr=sr)
-plt.show()
-
-# %%
-
-X = librosa.stft(audio)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(14, 5))
-librosa.display.specshow(Xdb, sr=sr, x_axis='time', y_axis='hz')
-
-# %%
 
 # Dataset Separation
 
@@ -115,10 +64,6 @@ librosa.display.specshow(Xdb, sr=sr, x_axis='time', y_axis='hz')
 base_dir = 'dataset/genres_converted'
 
 classes = ['blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'raggae', 'rock']
-
-# %%
-
-
 
 # %%
 
@@ -173,22 +118,6 @@ class DataPreprocessor:
     @staticmethod
     def pad_matrix(matrix, max_length):
         return np.concatenate((matrix, np.zeros(shape=(matrix.shape[0], max_length - matrix.shape[1]))), axis=1)
-
-# %%
-
-# Test data preprocessor:
-x, _ = DataPreprocessor.generate_label(classes)
-
-
-
-# %%
-cnt = 0
-for r, d, f in os.walk(base_dir):
-    print(r)
-
-    # cnt +=1
-    # if cnt == 30:
-    #     break
 
 # %%
 
@@ -454,51 +383,7 @@ dataGen.build_data_stft()
 
 # %%
 
-dataGen.data.shape
-
-# %%
-
-f = []
-
-# %%
-
-datum = DataPreprocessor.get_spect(dataGen.fname[0])
-
-# %%
-
-np.append(f, datum).reshape(128,1293)
-
-# %%
-
-datum.shape
-
-# %%
-
-# np.asarray(dataGen.data)
-
-
-len(dataGen.data)
-
-# %%
-
-x = np.zeros(shape=(1000,128,1293))
-x[0] = dataGen.data[0]
-
-# %%
-
-x
-# %%
-
-dataGen.build_data_stft()
-
-# %%
-
-dataGen.labels
-
-# %%
-
 """ Considering mel spectrogram of different kind of music """
-
 
 ftest1 = 'dataset/genres_converted/classical/classical.00000.wav'
 ftest2 = 'dataset/genres_converted/blues/blues.00000.wav'
@@ -528,48 +413,6 @@ librosa.display.specshow(f4, sr=22050, x_axis='time', y_axis='hz')
 
 plt.figure(figsize=(7,3))
 librosa.display.specshow(f5, sr=22050, x_axis='time', y_axis='hz')
-
-# %%
-
-""" Test for voice """
-
-data, sr = librosa.core.load('./testrecord.wav')
-
-# %%
-
-plt.figure(figsize=(14,6))
-librosa.display.waveplot(data, sr=sr)
-
-# %%
-
-X = librosa.stft(data)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(14, 5))
-librosa.display.specshow(Xdb, sr=sr, x_axis='time', y_axis='hz')
-
-# %%
-
-spect = librosa.feature.melspectrogram(y=data, sr=sr,n_fft=2048, hop_length=512)
-spect = librosa.power_to_db(spect, ref=np.max)
-plt.figure(figsize=(14,5))
-librosa.display.specshow(spect, sr=22050, x_axis='time', y_axis='hz')
-
-# %%
-
-f2.shape
-
-# %%
-
-mfccs = librosa.feature.mfcc(data, sr=sr, n_mfcc=40, n_fft=2049, hop_length=512)
-plt.figure(figsize=(14,5))
-librosa.display.specshow(mfccs, sr=sr, x_axis='time')
-
-# %%
-
-mfccs = DataPreprocessor.get_mfcc('./testrecord.wav')
-plt.figure(figsize=(14,5))
-librosa.display.specshow(mfccs, sr=sr, x_axis='time')
-
 # %%
 
 """ Model Class """
@@ -616,21 +459,6 @@ def buildModel1(shape=(128, 1320)):
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
-
-# %%
-
-model = buildModel1()
-model.summary()
-
-# %%
-
-model.fit(
-    x=dataGen.data,
-    y=dataGen.labels,
-    batch_size=4,
-    verbose=1,
-    epochs=100
-)
 
 
 # %%
@@ -709,29 +537,24 @@ model.summary()
 
 # %%
 
-dataGen.data.shape
+model = buildModel1()
+model.summary()
 
 # %%
 
-# Normalized data
-spect = DataPreprocessor.get_spect(dataGen.fname[0])
-plt.figure(figsize=(14,5))
-librosa.display.specshow(spect, sr=22050, x_axis='time', y_axis='hz')
+model.fit(
+    x=dataGen.data,
+    y=dataGen.labels,
+    batch_size=4,
+    verbose=1,
+    epochs=100
+)
 
-# %%
-data, sr = librosa.core.load(dataGen.fname[1])
-spect = librosa.feature.melspectrogram(y=data, sr=sr,n_fft=2048, hop_length=512)
-spect = librosa.power_to_db(spect, ref=np.max)
-plt.figure(figsize=(14,5))
-librosa.display.specshow(spect, sr=22050, x_axis='time', y_axis='hz')
 # %%
 
 model.save('model2D_3.h5')
 
-# %%
-
 
 # %%
-
 
 model.predict(dataGen.data[1:2])
