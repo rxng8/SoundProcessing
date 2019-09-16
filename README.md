@@ -8,6 +8,10 @@ This is a written project with regard to processing sound using keras deep learn
 - [ ] Deep Learning Jazz generator
 - [ ] Sort music by genres, artist, tempo, tags
 - [ ] Piano analysis
+-------------
+## Music Genres Classification using deep learning neural network
+
+In this small project, I try to make a classifier with two dimensional neural network to distinguish among 11 genres of music. The data I use contains 1000 pieces of 30 seconds music that are separated into different classes from GTZAN, and it can be downloaded [here](http://opihi.cs.uvic.ca/sound/genres.tar.gz) or on the [GTZAN website](http://marsyas.info/downloads/datasets.html).
 
 -------------
 ## Comission Note:
