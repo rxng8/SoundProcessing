@@ -1,0 +1,8 @@
+.idea
+
+dataset/
+model.h5
+model2D.h5
+model2D_2.h5
+model2D_3.h5
+*.h5
