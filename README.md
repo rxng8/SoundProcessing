@@ -1,11 +1,11 @@
 # Sound Processing project
 
 This is a written project with regard to processing sound using keras deep learning library. These are the planned application:
-- [x] Genres classification
+- [x] [Genres classification](https://github.com/dewanderelex/SoundProcessing)
 - [ ] Music auto-tagging
 - [ ] Instrumental classification
 - [ ] Tempo classification
-- [ ] Deep Learning Jazz generator
+- [ ] [Deep Learning Jazz generator](https://github.com/dewanderelex/MusicGenerator)
 - [ ] Sort music by genres, artist, tempo, tags
 - [ ] Piano analysis
 -------------

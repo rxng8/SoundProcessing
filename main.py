@@ -1,3 +1,5 @@
+
+# %%
 """
     Author: Alex Nguyen
     Gettysburg College class of 2022
@@ -16,11 +18,11 @@ class Config:
 
 # %%
 
-""" Importing library """
+#--------------------------------- Importing library ---------------------------------#
 
 # OS, IO
 from scipy.io import wavfile
-import os, sys
+import os, sys, shutil
 
 # Sound Processing library
 import librosa
@@ -53,17 +55,28 @@ from keras.optimizers import Adam, SGD, RMSprop
 
 # %%
 
-# Dataset Separation
-
-# No need
-
-# %%
-
 # Dataset and classes definition
 
 base_dir = 'dataset/genres_converted'
 
 classes = ['blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'raggae', 'rock']
+
+# %%
+
+# Dataset Separation
+
+val_base_dir = './dataset/genres_converted_val'
+
+for id, folder in enumerate(os.listdir(base_dir)):
+    idx = 0
+    list_val = os.listdir(val_base_dir)
+    if folder not in list_val:
+        os.mkdir(os.path.join(val_base_dir, folder))
+    for _, fname in enumerate(os.listdir(os.path.join(base_dir, folder))):
+        if fname.endswith('.wav') and idx % 10 == 0:
+            # shutil.copy2(os.path.join(base_dir, folder, fname), os.path.join(val_base_dir, folder))
+            shutil.move(os.path.join(base_dir, folder, fname), os.path.join(val_base_dir, folder))
+        idx += 1
 
 # %%
 
@@ -259,7 +272,7 @@ class AudioDataGenerator2D(Sequence):
     :param shuffle: (boolean) Specify whether or not you want to shuffle the data to be trained.
     """
     def __init__(self, data_path, batch_size=32, dim=(128,1308), n_channels=1,
-             n_classes=10, shuffle=True):
+             n_classes=10, shuffle=True, validation_split=0.1):
         """
         :var self.classes:
         :var self.labels:
@@ -278,7 +291,9 @@ class AudioDataGenerator2D(Sequence):
         self.labels = []
         self.fname = []
         self.data = []
+        self.data_validation = []
 
+        self.validation_split = validation_split
         self.data_size = 0
         self.data_shape = (None,None)
         self.data_path = data_path
@@ -300,7 +315,7 @@ class AudioDataGenerator2D(Sequence):
         for i, _cls in enumerate(os.listdir(self.data_path)):
             self.classes.append(_cls)
             for j, fname in enumerate(os.listdir(os.path.join(self.data_path, _cls))):
-                self.fname.append(os.path.join(base_dir, _cls, fname))
+                self.fname.append(os.path.join(self.data_path, _cls, fname))
                 self.labels.append(_cls)
                 
         print("Found {} classes in root data folder".format(len(self.classes)))
@@ -380,6 +395,114 @@ dataGen = AudioDataGenerator2D(base_dir)
 # %%
 
 dataGen.build_data_stft()
+
+# %%
+
+""" Data Validation Generator Class """
+
+class AudioValidationDataGenerator2D(Sequence):
+    """
+    :param data_path: (String) This is the base folder data.
+    :param batch_size: (int32) This is the base folder data.
+    :param dim: (Tuple: (a, b, c)) 3D tuple shape of input dimension
+    :param n_channels: (int32) Number of channel.
+    :param n_classes: (int32) Number of classes.
+    :param shuffle: (boolean) Specify whether or not you want to shuffle the data to be trained.
+    """
+    def __init__(self, data_path, batch_size=32, dim=(128,1308), n_channels=1,
+             n_classes=10, shuffle=True, validation_split=0.1):
+        """
+        :var self.classes:
+        :var self.labels:
+        :var self.fname:
+        :var self.data:
+        :var self.dim:
+        :var self.batch_size:
+        :var self.list_IDs:
+        :var self.n_channels:
+        :var self.n_classes:
+        :var self.shuffle:
+        :var self.tokenizer:
+        :var self.data_path:
+        """
+        self.classes = []
+        self.labels = []
+        self.fname = []
+        self.data = []
+        self.data_validation = []
+
+        self.validation_split = validation_split
+        self.data_size = 0
+        self.data_shape = (None,None)
+        self.data_path = data_path
+        self.dim = dim
+        self.batch_size = batch_size
+        self.list_IDs = []
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.shuffle = shuffle
+        self.on_epoch_end()
+        self.load_data()
+        
+    """
+    :param data_path: (String) The actual base folder of data
+    """
+    def load_data(self):
+
+        # Generate labels and convert to categorized 2D-vector
+        for i, _cls in enumerate(os.listdir(self.data_path)):
+            self.classes.append(_cls)
+            for j, fname in enumerate(os.listdir(os.path.join(self.data_path, _cls))):
+                self.fname.append(os.path.join(self.data_path, _cls, fname))
+                self.labels.append(_cls)
+                
+        print("Found {} classes in root data folder".format(len(self.classes)))
+        self.labels, self.tokenizer = DataPreprocessor.generate_label(self.labels)
+        self.labels = np.asarray(self.labels)
+        self.data_size = self.labels.shape[0]
+            
+    
+    def build_data_stft(self):
+        print('Building data...')
+
+        temp_data = []
+        max_length = 0
+        for i, fname in enumerate(self.fname):
+            spect = DataPreprocessor.get_spect(fname)
+            temp_data.append(spect)
+            if spect.shape[1] > max_length:
+                max_length = spect.shape[1]
+
+        self.data = np.zeros(shape=(self.data_size, self.dim[0], max_length))
+
+        for i, spect in enumerate(temp_data):
+            if spect.shape[1] < max_length:
+                self.data[i] = DataPreprocessor.pad_matrix(spect, max_length)
+            else:
+                self.data[i] = spect
+
+        self.data = np.expand_dims(self.data, axis=3)
+
+        print('Build Data Successful!')
+        print('Found {} pieces of data and converted each piece in to shape {}'.format(self.data_size, self.dim[1:]))
+
+    def build_data_mfcc(self):
+        for fname in self.fname:
+            datum = DataPreprocessor.get_mfcc(fname)
+        return
+
+
+# %%
+
+val_dataGen = AudioValidationDataGenerator2D(val_base_dir)
+
+# %%
+
+val_dataGen.build_data_stft()
+
+# %%
+
+val_dataGen.data[0].shape
 
 # %%
 
@@ -525,7 +648,7 @@ def build_model_2D_2(shape):
 
     # Compile
     model = Model(in_tensor, tensor)
-    rmsOp = RMSprop(lr=0.0001)
+    rmsOp = RMSprop(lr=0.000001)
     model.compile(optimizer=rmsOp, loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
@@ -542,19 +665,86 @@ model.summary()
 
 # %%
 
-model.fit(
+history = model.fit(
     x=dataGen.data,
     y=dataGen.labels,
     batch_size=4,
     verbose=1,
-    epochs=100
+    epochs=2,
+    validation_data=(val_dataGen.data, val_dataGen.labels),
+    shuffle=True
 )
 
 # %%
 
-model.save('model2D_3.h5')
-
+model.save('model2D_4_train_val.h5')
 
 # %%
 
-model.predict(dataGen.data[1:2])
+dataGen.data[250]
+
+# %%
+
+dataGen.labels[250]
+
+# %%
+
+predicted = model.predict(dataGen.data[250:251])[0]
+
+# %%
+
+index = np.argmax(predicted)
+
+# %%
+
+index
+
+# %%
+
+dataGen.tokenizer.word_index
+
+# %%
+from keras.models import load_model
+model = load_model('model2D_3.h5')
+
+# %%
+
+
+
+# %%
+import pandas as pd
+
+hist_df = pd.DataFrame(history.history)
+
+# save to json:  
+hist_json_file = 'history.json' 
+with open(hist_json_file, mode='w') as f:
+    hist_df.to_json(f)
+
+# or save to csv: 
+hist_csv_file = 'history.csv'
+with open(hist_csv_file, mode='w') as f:
+    hist_df.to_csv(f)
+
+# %%
+
+# summarize history for accuracy
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+# %%
+
+
+# summarize history for loss
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
