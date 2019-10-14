@@ -26,6 +26,11 @@ In this small project, I try to make a classifier with two dimensional neural ne
 - After extracting the data as spectrogram and create model based on 128x1308 pixel, I successfully train the model with an accuracy of 99.90 % and loss of 1.61%. I realize that reducing the learning rate to the factor of 1e(+n) may improve the chance of weights being rounded errorly.
 - Plan for the next part: write a clear data generator for the network, write cleaner code, write documentation, seperate files by utilities, write test.
 
+#### Oct 14, 2019:
+- Update Training Analysis
+
+![This is accuracy model](./model_acc.png)
+![This is accuracy model](./model_loss.png)
 -------------
 
 
