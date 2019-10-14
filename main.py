@@ -705,7 +705,7 @@ dataGen.tokenizer.word_index
 
 # %%
 from keras.models import load_model
-model = load_model('model2D_3.h5')
+model = load_model('model2D_4_train_val.h5')
 
 # %%
 
@@ -746,5 +746,63 @@ plt.plot(history.history['val_loss'])
 plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+# %%
+
+
+import json,codecs
+import numpy as np
+def saveHist(path,history):
+
+    new_hist = {}
+    for key in list(history.history.keys()):
+        if type(history.history[key]) == np.ndarray:
+            new_hist[key] = history.history[key].tolist()
+        elif type(history.history[key]) == list:
+           if  type(history.history[key][0]) == np.float64:
+               new_hist[key] = list(map(float, history.history[key]))
+
+    print(new_hist)
+    with codecs.open(path, 'w', encoding='utf-8') as file:
+        json.dump(new_hist, file, separators=(',', ':'), sort_keys=True, indent=4) 
+
+def loadHist(path):
+    with codecs.open(path, 'r', encoding='utf-8') as file:
+        n = json.loads(file.read())
+    return n
+
+# %%
+
+history = loadHist('history.json')
+
+# %%
+
+
+history['acc']
+
+# %%
+
+# summarize history for accuracy
+plt.figure(figsize=(16,8))
+plt.plot(history['acc'].values())
+plt.plot(history['val_acc'].values())
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+# %%
+
+
+# summarize history for loss
+plt.figure(figsize=(16,8))
+plt.plot(history['loss'].values())
+plt.plot(history['val_loss'].values())
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
